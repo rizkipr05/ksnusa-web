@@ -18,6 +18,7 @@ type CustomerRow = {
   email?: string | null;
   phone?: string | null;
   preferredService?: string | null;
+  customerType?: string | null;
   vehicles: Vehicle[];
   serviceCount: number;
 };
@@ -32,6 +33,7 @@ export default function CustomersPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [preferredService, setPreferredService] = useState("");
+  const [customerType, setCustomerType] = useState("INDIVIDU");
   const [plateNumber, setPlateNumber] = useState("");
   const [brand, setBrand] = useState("");
   const [model, setModel] = useState("");
@@ -83,6 +85,7 @@ export default function CustomersPage() {
           email,
           phone,
           preferredService,
+          customerType,
           vehicle: {
             plateNumber,
             brand,
@@ -97,6 +100,7 @@ export default function CustomersPage() {
       setEmail("");
       setPhone("");
       setPreferredService("");
+      setCustomerType("INDIVIDU");
       setPlateNumber("");
       setBrand("");
       setModel("");
@@ -138,6 +142,7 @@ export default function CustomersPage() {
                     <tr className="bg-gray-50">
                       <th className="p-2 border text-left">Nama</th>
                       <th className="p-2 border text-left">Kontak</th>
+                      <th className="p-2 border text-left">Tipe</th>
                       <th className="p-2 border text-left">Kendaraan</th>
                       <th className="p-2 border text-center">Servis</th>
                     </tr>
@@ -155,6 +160,7 @@ export default function CustomersPage() {
                           <div>{c.email || "-"}</div>
                           <div className="text-xs text-gray-500">{c.phone || "-"}</div>
                         </td>
+                        <td className="p-2 border text-xs text-gray-600">{c.customerType || "-"}</td>
                         <td className="p-2 border text-xs text-gray-600">
                           {c.vehicles.length
                             ? c.vehicles.map((v) => `${v.brand || ""} ${v.model || ""} ${v.plateNumber || ""}`.trim()).join(", ")
@@ -165,7 +171,7 @@ export default function CustomersPage() {
                     ))}
                     {!customers.length && (
                       <tr>
-                        <td className="p-4 border text-center text-gray-500" colSpan={4}>
+                        <td className="p-4 border text-center text-gray-500" colSpan={5}>
                           Belum ada pelanggan.
                         </td>
                       </tr>
@@ -210,6 +216,16 @@ export default function CustomersPage() {
                 onChange={(e) => setPreferredService(e.target.value)}
                 disabled={!hasPermission("crm_manage")}
               />
+              <select
+                className="w-full border rounded px-3 py-2 text-sm"
+                value={customerType}
+                onChange={(e) => setCustomerType(e.target.value)}
+                disabled={!hasPermission("crm_manage")}
+              >
+                <option value="INDIVIDU">Individu</option>
+                <option value="KOMUNITAS">Komunitas</option>
+                <option value="RACING_TEAM">Racing Team</option>
+              </select>
               <div className="border rounded p-3 space-y-2">
                 <div className="text-xs text-gray-500">Kendaraan utama</div>
                 <input

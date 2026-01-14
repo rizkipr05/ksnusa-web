@@ -13,6 +13,8 @@ async function main() {
     await prisma.complaint.deleteMany();
     await prisma.communicationLog.deleteMany();
     await prisma.satisfactionSurvey.deleteMany();
+    await prisma.reward.deleteMany();
+    await prisma.loyaltyTierBenefit.deleteMany();
     await prisma.loyaltyTransaction.deleteMany();
     await prisma.loyaltyProfile.deleteMany();
     await prisma.vehicle.deleteMany();
@@ -202,6 +204,7 @@ async function main() {
       phone: "081234567890",
       address: "Jakarta",
       preferredService: "Servis berkala & ganti oli",
+      customerType: "INDIVIDU",
     }
   });
 
@@ -212,6 +215,7 @@ async function main() {
       phone: "081298765432",
       address: "Depok",
       preferredService: "Perbaikan rem dan kaki-kaki",
+      customerType: "KOMUNITAS",
     }
   });
 
@@ -222,6 +226,7 @@ async function main() {
       phone: "081355566677",
       address: "Tangerang",
       preferredService: "Servis rutin & tune up",
+      customerType: "INDIVIDU",
     }
   });
 
@@ -232,6 +237,7 @@ async function main() {
       phone: "081322244455",
       address: "Bekasi",
       preferredService: "Engine rebuild & performance upgrade",
+      customerType: "RACING_TEAM",
     }
   });
 
@@ -467,6 +473,28 @@ async function main() {
 
   console.log('✓ Loyalty profiles created');
 
+  // 10b. Loyalty tier benefits
+  await prisma.loyaltyTierBenefit.createMany({
+    data: [
+      { tier: "Silver", title: "Diskon servis 5%", description: "Diskon untuk servis berkala", discountPercent: 5 },
+      { tier: "Gold", title: "Diskon servis 10%", description: "Diskon servis + prioritas booking", discountPercent: 10 },
+      { tier: "Platinum", title: "Diskon servis 15%", description: "Diskon besar + prioritas booking", discountPercent: 15 },
+      { tier: "Platinum", title: "Gratis check-up ringan", description: "Free check-up setiap 3 bulan" },
+    ]
+  });
+
+  await prisma.reward.create({
+    data: {
+      customerId: customer2.id,
+      type: "DISCOUNT",
+      title: "Voucher Diskon 10%",
+      status: "PENDING",
+      pointsCost: 200
+    }
+  });
+
+  console.log('✓ Loyalty benefits & rewards created');
+
   // 11. Sample satisfaction & communication logs
   await prisma.satisfactionSurvey.create({
     data: {
@@ -495,7 +523,9 @@ async function main() {
       channel: "WhatsApp",
       message: "Reminder servis berkala bulan depan.",
       status: "SENT",
-      sentAt: new Date('2025-12-08')
+      sentAt: new Date('2025-12-08'),
+      source: "MANUAL",
+      campaign: "Reminder Berkala"
     }
   });
 
@@ -506,7 +536,9 @@ async function main() {
       channel: "Phone",
       message: "Follow-up pasca servis, cek kondisi motor.",
       status: "SENT",
-      sentAt: new Date('2025-12-16')
+      sentAt: new Date('2025-12-16'),
+      source: "MANUAL",
+      campaign: "Follow-up Servis"
     }
   });
 

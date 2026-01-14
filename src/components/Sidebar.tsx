@@ -22,6 +22,10 @@ import {
   Star,
   Smile,
   MessageCircle,
+  Megaphone,
+  User,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -72,65 +76,7 @@ export default function Sidebar() {
     return permissions[permissionName] === true;
   };
 
-  // Daftar Menu Navigasi dengan permission checking
-  const routes = [
-    {
-      label: "Dashboard",
-      icon: LayoutDashboard,
-      href: "/dashboard",
-      active: pathname === "/dashboard",
-      permission: "dashboard_view"
-    },
-    {
-      label: "Inventory",
-      icon: Package,
-      href: "/inventory",
-      active: pathname === "/inventory",
-      permission: "inventory_view"
-    },
-    {
-      label: "Suppliers",
-      icon: Truck,
-      href: "/suppliers",
-      active: pathname === "/suppliers",
-      permission: "suppliers_view"
-    },
-    {
-      label: "Orders",
-      icon: ShoppingCart,
-      href: "/orders",
-      active: pathname === "/orders",
-      permission: "orders_view"
-    },
-    {
-      label: "Service Orders",
-      icon: Wrench,
-      href: "/service-orders",
-      active: pathname === "/service-orders",
-      permission: "orders_view"
-    },
-
-    {
-      label: "Approvals",
-      icon: CheckSquare,
-      href: "/approvals",
-      active: pathname === "/approvals",
-      permission: "approvals_view"
-    },
-    {
-      label: "Mechanic Notes",
-      icon: FileText,
-      href: "/mechanic-notes",
-      active: pathname === "/mechanic-notes",
-      permission: "mechanic_notes_view"
-    },
-    {
-      label: "CRM",
-      icon: Users,
-      href: "/crm/customers",
-      active: pathname?.startsWith("/crm"),
-      permission: "crm_view"
-    },
+  const crmRoutes = [
     {
       label: "Komplain",
       icon: MessageSquare,
@@ -174,6 +120,73 @@ export default function Sidebar() {
       permission: "crm_view"
     },
     {
+      label: "Promo",
+      icon: Megaphone,
+      href: "/crm/promo",
+      active: pathname === "/crm/promo",
+      permission: "crm_view"
+    },
+  ];
+
+  // Daftar Menu Navigasi dengan permission checking
+  const routes = [
+    {
+      label: "Dashboard",
+      icon: LayoutDashboard,
+      href: "/dashboard",
+      active: pathname === "/dashboard",
+      permission: "dashboard_view"
+    },
+    {
+      label: "Inventory",
+      icon: Package,
+      href: "/inventory",
+      active: pathname === "/inventory",
+      permission: "inventory_view"
+    },
+    {
+      label: "Suppliers",
+      icon: Truck,
+      href: "/suppliers",
+      active: pathname === "/suppliers",
+      permission: "suppliers_view"
+    },
+    {
+      label: "Orders",
+      icon: ShoppingCart,
+      href: "/orders",
+      active: pathname === "/orders",
+      permission: "orders_view"
+    },
+    {
+      label: "Service Orders",
+      icon: Wrench,
+      href: "/service-orders",
+      active: pathname === "/service-orders",
+      permission: "orders_view"
+    },
+    {
+      label: "Approvals",
+      icon: CheckSquare,
+      href: "/approvals",
+      active: pathname === "/approvals",
+      permission: "approvals_view"
+    },
+    {
+      label: "Mechanic Notes",
+      icon: FileText,
+      href: "/mechanic-notes",
+      active: pathname === "/mechanic-notes",
+      permission: "mechanic_notes_view"
+    },
+    {
+      label: "Profile",
+      icon: User,
+      href: "/profile",
+      active: pathname === "/profile",
+      permission: "dashboard_view"
+    },
+    {
       label: "Role Management",
       icon: Shield,
       href: "/role-management",
@@ -184,6 +197,13 @@ export default function Sidebar() {
 
   // Filter routes berdasarkan permission
   const visibleRoutes = routes.filter(route => hasPermission(route.permission));
+  const visibleCrmRoutes = crmRoutes.filter(route => hasPermission(route.permission));
+  const isCrmActive = pathname?.startsWith("/crm");
+  const [crmOpen, setCrmOpen] = useState(isCrmActive);
+
+  useEffect(() => {
+    if (isCrmActive) setCrmOpen(true);
+  }, [isCrmActive]);
 
   if (loading) {
     return (
@@ -196,7 +216,7 @@ export default function Sidebar() {
   }
 
   return (
-    <div className="space-y-4 py-4 flex flex-col h-full bg-slate-900 text-white">
+    <div className="space-y-4 py-4 flex flex-col h-full bg-slate-900 text-white overflow-y-auto">
       <div className="px-3 py-2 flex-1">
         <Link href="/dashboard" className="flex items-center pl-3 mb-14">
           <div className="relative w-8 h-8 mr-4">
@@ -225,6 +245,44 @@ export default function Sidebar() {
               </div>
             </Link>
           ))}
+
+          {hasPermission("crm_view") && (
+            <div>
+              <button
+                type="button"
+                onClick={() => setCrmOpen((prev) => !prev)}
+                className={cn(
+                  "text-sm group flex p-3 w-full justify-start font-medium cursor-pointer hover:text-white hover:bg-white/10 rounded-lg transition",
+                  isCrmActive ? "text-white bg-white/10" : "text-zinc-400"
+                )}
+              >
+                <div className="flex items-center flex-1">
+                  <Users className={cn("h-5 w-5 mr-3", isCrmActive ? "text-blue-500" : "text-zinc-400")} />
+                  CRM
+                </div>
+                {crmOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </button>
+              {crmOpen && (
+                <div className="ml-6 mt-1 space-y-1">
+                  {visibleCrmRoutes.map((route) => (
+                    <Link
+                      key={route.href}
+                      href={route.href}
+                      className={cn(
+                        "text-sm group flex p-2 w-full justify-start font-medium cursor-pointer hover:text-white hover:bg-white/10 rounded-lg transition",
+                        route.active ? "text-white bg-white/10" : "text-zinc-400"
+                      )}
+                    >
+                      <div className="flex items-center flex-1">
+                        <route.icon className={cn("h-4 w-4 mr-3", route.active ? "text-blue-500" : "text-zinc-400")} />
+                        {route.label}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
       

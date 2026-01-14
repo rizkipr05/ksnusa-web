@@ -34,6 +34,11 @@ type BIOverview = {
     service: Array<{ month: string; value: number }>;
     parts: Array<{ month: string; value: number }>;
     revenue: Array<{ month: string; value: number }>;
+    model?: {
+      service?: string;
+      parts?: string;
+      revenue?: string;
+    };
   };
   insights: Array<{ title: string; detail: string; level: string }>;
 };
@@ -47,6 +52,18 @@ type Alert = {
   level: string;
 };
 
+type Recommendation = {
+  title: string;
+  detail: string;
+  type: string;
+};
+
+type ExpansionProjection = {
+  scenario: string;
+  growth: number;
+  items: Array<{ month: string; services: number; revenue: number }>;
+};
+
 const palette = ["#0f766e", "#3b82f6", "#f97316", "#8b5cf6", "#14b8a6", "#f43f5e"];
 
 export default function BIPage() {
@@ -54,6 +71,9 @@ export default function BIPage() {
   const [loading, setLoading] = useState(true);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [alertThreshold, setAlertThreshold] = useState(25);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [expansion, setExpansion] = useState<ExpansionProjection[]>([]);
+  const [expansionMonths, setExpansionMonths] = useState(3);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -75,6 +95,26 @@ export default function BIPage() {
       .then((d) => setAlerts(d?.alerts || []))
       .catch(() => setAlerts([]));
   }, [alertThreshold]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    fetch("/api/bi/recommendations", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((d) => setRecommendations(d?.recommendations || []))
+      .catch(() => setRecommendations([]));
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    fetch(`/api/bi/expansion?months=${expansionMonths}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((d) => setExpansion(d?.projections || []))
+      .catch(() => setExpansion([]));
+  }, [expansionMonths]);
 
   const forecastSeries = useMemo(() => {
     if (!overview?.forecast) return [];
@@ -220,7 +260,9 @@ export default function BIPage() {
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <h2 className="font-semibold">Prediksi Permintaan</h2>
-                    <p className="text-xs text-gray-500">Moving average 3 bulan ke depan.</p>
+                    <p className="text-xs text-gray-500">
+                      Holt-Winters 3 bulan ke depan (fallback: moving average).
+                    </p>
                   </div>
                 </div>
                 <div className="h-72">
@@ -302,6 +344,69 @@ export default function BIPage() {
               ) : (
                 <div className="text-sm text-gray-500">Belum ada perubahan signifikan.</div>
               )}
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="bg-white rounded border p-4 space-y-3">
+                <div>
+                  <h2 className="font-semibold">Rekomendasi Layanan Baru</h2>
+                  <p className="text-xs text-gray-500">Saran layanan berdasarkan tren servis & sparepart.</p>
+                </div>
+                {recommendations.length ? (
+                  <div className="space-y-2 text-sm">
+                    {recommendations.map((rec) => (
+                      <div key={`${rec.title}-${rec.type}`} className="border rounded p-3">
+                        <div className="font-medium">{rec.title}</div>
+                        <div className="text-gray-600">{rec.detail}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500">Belum ada rekomendasi.</div>
+                )}
+              </div>
+
+              <div className="bg-white rounded border p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="font-semibold">Simulasi Ekspansi Pasar</h2>
+                    <p className="text-xs text-gray-500">Proyeksi layanan & pendapatan.</p>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-gray-500">Periode</span>
+                    <select
+                      className="border rounded px-2 py-1"
+                      value={expansionMonths}
+                      onChange={(e) => setExpansionMonths(Number(e.target.value))}
+                    >
+                      <option value={3}>3 bulan</option>
+                      <option value={6}>6 bulan</option>
+                    </select>
+                  </div>
+                </div>
+                {expansion.length ? (
+                  <div className="space-y-3 text-sm">
+                    {expansion.map((scenario) => (
+                      <div key={scenario.scenario} className="border rounded p-3">
+                        <div className="font-medium">{scenario.scenario}</div>
+                        <div className="text-xs text-gray-500 mb-2">
+                          Growth {(scenario.growth * 100).toFixed(0)}%
+                        </div>
+                        <div className="space-y-1">
+                          {scenario.items.map((item) => (
+                            <div key={item.month} className="flex items-center justify-between">
+                              <span>{item.month}</span>
+                              <span>{item.services} servis · Rp {item.revenue.toLocaleString("id-ID")}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500">Belum ada simulasi.</div>
+                )}
+              </div>
             </div>
           </>
         )}

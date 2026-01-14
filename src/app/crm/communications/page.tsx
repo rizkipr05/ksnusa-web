@@ -10,6 +10,8 @@ type LogRow = {
   message: string;
   status: string;
   sentAt?: string | null;
+  source?: string | null;
+  campaign?: string | null;
   customer: { id: string; name: string };
 };
 
@@ -17,12 +19,14 @@ type CustomerOption = { id: string; name: string };
 
 const types = ["CALL", "WHATSAPP", "EMAIL", "PROMO"];
 const statuses = ["SENT", "FAILED", "DRAFT"];
+const sources = ["MANUAL", "AUTO"];
 
 export default function CommunicationsPage() {
   const [logs, setLogs] = useState<LogRow[]>([]);
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [typeFilter, setTypeFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [sourceFilter, setSourceFilter] = useState("ALL");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -32,10 +36,11 @@ export default function CommunicationsPage() {
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState("SENT");
   const [sentAt, setSentAt] = useState("");
+  const [campaign, setCampaign] = useState("");
 
   const { hasPermission } = usePermission();
 
-  const loadLogs = async (filters?: { type?: string; status?: string }) => {
+  const loadLogs = async (filters?: { type?: string; status?: string; source?: string }) => {
     setLoading(true);
     setError("");
     try {
@@ -43,6 +48,7 @@ export default function CommunicationsPage() {
       const params = new URLSearchParams();
       if (filters?.type && filters.type !== "ALL") params.set("type", filters.type);
       if (filters?.status && filters.status !== "ALL") params.set("status", filters.status);
+      if (filters?.source && filters.source !== "ALL") params.set("source", filters.source);
       const res = await fetch(`/api/crm/communications?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -72,7 +78,7 @@ export default function CommunicationsPage() {
 
   const onFilter = (e: React.FormEvent) => {
     e.preventDefault();
-    loadLogs({ type: typeFilter, status: statusFilter });
+    loadLogs({ type: typeFilter, status: statusFilter, source: sourceFilter });
   };
 
   const onCreate = async (e: React.FormEvent) => {
@@ -93,6 +99,8 @@ export default function CommunicationsPage() {
           message,
           status,
           sentAt: sentAt || null,
+          source: "MANUAL",
+          campaign: campaign || null,
         }),
       });
       const data = await res.json();
@@ -103,7 +111,8 @@ export default function CommunicationsPage() {
       setMessage("");
       setStatus("SENT");
       setSentAt("");
-      loadLogs({ type: typeFilter, status: statusFilter });
+      setCampaign("");
+      loadLogs({ type: typeFilter, status: statusFilter, source: sourceFilter });
     } catch (e: any) {
       setError(e.message);
     }
@@ -142,6 +151,16 @@ export default function CommunicationsPage() {
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>
+              <select
+                value={sourceFilter}
+                onChange={(e) => setSourceFilter(e.target.value)}
+                className="border rounded px-2 py-2 text-sm"
+              >
+                <option value="ALL">Semua Source</option>
+                {sources.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
               <button className="px-3 py-2 text-sm bg-black text-white rounded">Filter</button>
             </form>
 
@@ -164,7 +183,11 @@ export default function CommunicationsPage() {
                         <td className="p-2 border">{l.customer.name}</td>
                         <td className="p-2 border">{l.type}</td>
                         <td className="p-2 border">{l.status}</td>
-                        <td className="p-2 border text-xs text-gray-600">{l.message}</td>
+                        <td className="p-2 border text-xs text-gray-600">
+                          <div className="font-medium text-gray-700">{l.campaign || "-"}</div>
+                          <div>{l.message}</div>
+                          <div className="text-[11px] text-gray-500 mt-1">{l.source || "MANUAL"}</div>
+                        </td>
                       </tr>
                     ))}
                     {!logs.length && (
@@ -222,6 +245,13 @@ export default function CommunicationsPage() {
                 disabled={!hasPermission("crm_manage")}
                 rows={3}
               />
+              <input
+                className="w-full border rounded px-3 py-2 text-sm"
+                placeholder="Nama campaign (opsional)"
+                value={campaign}
+                onChange={(e) => setCampaign(e.target.value)}
+                disabled={!hasPermission("crm_manage")}
+              />
               <select
                 className="w-full border rounded px-3 py-2 text-sm"
                 value={status}
@@ -237,6 +267,13 @@ export default function CommunicationsPage() {
                 className="w-full border rounded px-3 py-2 text-sm"
                 value={sentAt}
                 onChange={(e) => setSentAt(e.target.value)}
+                disabled={!hasPermission("crm_manage")}
+              />
+              <input
+                className="w-full border rounded px-3 py-2 text-sm"
+                placeholder="Nama campaign (opsional)"
+                value={campaign}
+                onChange={(e) => setCampaign(e.target.value)}
                 disabled={!hasPermission("crm_manage")}
               />
               <button

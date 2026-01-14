@@ -112,6 +112,8 @@ Halaman utama → permission:
 - /crm/loyalty → crm_view
 - /crm/satisfaction → crm_view
 - /crm/communications → crm_view
+- /crm/promo → crm_view
+- /profile → dashboard_view
 - /role-management → role_management
 
 Cara tes cepat:

@@ -103,6 +103,16 @@ export async function GET(req: Request) {
       .sort((a, b) => b.total - a.total)
       .slice(0, 5);
 
+    const typeAgg = await prisma.customer.groupBy({
+      by: ["customerType"],
+      _count: { _all: true },
+    });
+
+    const typeSegments = typeAgg
+      .filter((t) => t.customerType)
+      .map((t) => ({ type: t.customerType as string, total: t._count._all }))
+      .sort((a, b) => b.total - a.total);
+
     const sortedByRevenue = [...enriched].sort((a, b) => b.revenue - a.revenue).slice(0, 5);
     const sortedByActivity = [...enriched].sort((a, b) => b.serviceCount - a.serviceCount).slice(0, 5);
 
@@ -133,6 +143,40 @@ export async function GET(req: Request) {
       },
     ];
 
+    const brandSegments = topBrands.map((brand) => ({
+      name: `${brand.brand} Owners`,
+      size: brand.total,
+      reason: "Brand dominan pada database pelanggan.",
+      suggestion: `Kampanye servis khusus ${brand.brand} + paket sparepart.`,
+    }));
+
+    const premiumTargets = enriched
+      .filter((c) => c.valueTier === "High Value" && c.frequency !== "Loyal")
+      .map((c) => ({
+        name: c.name,
+        size: 1,
+        reason: "High value tapi belum loyal.",
+        suggestion: "Penawaran loyalty upgrade + paket servis premium.",
+      }))
+      .slice(0, 5);
+
+    const untappedSegments = [
+      {
+        name: "Racing Team",
+        size: 0,
+        reason: "Belum ada label khusus racing/team. Potensi partnership komunitas balap.",
+        suggestion: "Buat paket race prep + kontrak servis periodik.",
+      },
+      {
+        name: "Komunitas Motor",
+        size: 0,
+        reason: "Belum ada program khusus komunitas.",
+        suggestion: "Diskon grup + event gathering servis bersama.",
+      },
+    ];
+
+    const expansionSegments = [...brandSegments, ...premiumTargets, ...untappedSegments];
+
     return new Response(
       JSON.stringify({
         segments: enriched,
@@ -141,6 +185,7 @@ export async function GET(req: Request) {
           byFrequency,
           byValue,
           topBrands,
+          typeSegments,
         },
         highlights: {
           topRevenue: sortedByRevenue,
@@ -148,6 +193,7 @@ export async function GET(req: Request) {
           inactive: inactive.slice(0, 5),
         },
         recommendations,
+        expansionSegments,
       }),
       { status: 200 }
     );

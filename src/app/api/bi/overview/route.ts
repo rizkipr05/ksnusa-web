@@ -65,6 +65,57 @@ function rollingForecast(series: { month: string; value: number }[], monthsAhead
   return forecasts;
 }
 
+function holtWintersForecast(
+  series: { month: string; value: number }[],
+  seasonLength = 12,
+  monthsAhead = 3,
+  alpha = 0.4,
+  beta = 0.2,
+  gamma = 0.3
+) {
+  const sorted = [...series].sort((a, b) => a.month.localeCompare(b.month));
+  if (sorted.length < seasonLength * 2) {
+    return { model: "moving_average", forecast: rollingForecast(sorted, monthsAhead) };
+  }
+
+  const values = sorted.map((s) => s.value);
+  const lastMonth = sorted[sorted.length - 1].month;
+  const seasonals: number[] = new Array(seasonLength).fill(0);
+
+  const season1 = values.slice(0, seasonLength);
+  const season2 = values.slice(seasonLength, seasonLength * 2);
+  const seasonAvg1 = season1.reduce((acc, v) => acc + v, 0) / seasonLength;
+  const seasonAvg2 = season2.reduce((acc, v) => acc + v, 0) / seasonLength;
+
+  for (let i = 0; i < seasonLength; i += 1) {
+    seasonals[i] = season1[i] - seasonAvg1;
+  }
+
+  let level = seasonAvg1;
+  let trend = (seasonAvg2 - seasonAvg1) / seasonLength;
+
+  for (let i = 0; i < values.length; i += 1) {
+    const idx = i % seasonLength;
+    const val = values[i];
+    const lastLevel = level;
+    const lastTrend = trend;
+    const lastSeason = seasonals[idx];
+
+    level = alpha * (val - lastSeason) + (1 - alpha) * (lastLevel + lastTrend);
+    trend = beta * (level - lastLevel) + (1 - beta) * lastTrend;
+    seasonals[idx] = gamma * (val - level) + (1 - gamma) * lastSeason;
+  }
+
+  const forecast: { month: string; value: number }[] = [];
+  for (let i = 1; i <= monthsAhead; i += 1) {
+    const idx = (values.length + i - 1) % seasonLength;
+    const next = level + i * trend + seasonals[idx];
+    forecast.push({ month: addMonths(lastMonth, i), value: Math.max(0, Math.round(next)) });
+  }
+
+  return { model: "holt_winters", forecast };
+}
+
 function buildSeasonality(series: { month: string; value: number }[]) {
   const buckets = new Map<number, number[]>();
   series.forEach((point) => {
@@ -192,9 +243,9 @@ export async function GET(req: Request) {
       value: row.revenue || 0,
     }));
 
-    const serviceForecast = rollingForecast(serviceSeries, 3);
-    const partsForecast = rollingForecast(partsSeries, 3);
-    const revenueForecast = rollingForecast(revenueSeries, 3);
+    const serviceForecastResult = holtWintersForecast(serviceSeries, 12, 3);
+    const partsForecastResult = holtWintersForecast(partsSeries, 12, 3);
+    const revenueForecastResult = holtWintersForecast(revenueSeries, 12, 3);
 
     const seasonality = buildSeasonality(serviceSeries);
 
@@ -237,9 +288,14 @@ export async function GET(req: Request) {
         topCategories,
         seasonality,
         forecast: {
-          service: serviceForecast,
-          parts: partsForecast,
-          revenue: revenueForecast,
+          service: serviceForecastResult.forecast,
+          parts: partsForecastResult.forecast,
+          revenue: revenueForecastResult.forecast,
+          model: {
+            service: serviceForecastResult.model,
+            parts: partsForecastResult.model,
+            revenue: revenueForecastResult.model,
+          },
         },
         insights,
       }),

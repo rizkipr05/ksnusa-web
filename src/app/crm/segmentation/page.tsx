@@ -21,6 +21,7 @@ type Summary = {
   byFrequency: Record<string, number>;
   byValue: Record<string, number>;
   topBrands: Array<{ brand: string; total: number }>;
+  typeSegments: Array<{ type: string; total: number }>;
 };
 
 type Highlight = {
@@ -40,6 +41,7 @@ type SegmentationData = {
     inactive: Highlight[];
   };
   recommendations: Array<{ title: string; detail: string; level: string }>;
+  expansionSegments: Array<{ name: string; size: number; reason: string; suggestion: string }>;
 };
 
 export default function SegmentationPage() {
@@ -125,6 +127,22 @@ export default function SegmentationPage() {
               </div>
             </div>
 
+            <div className="bg-white border rounded p-4">
+              <h2 className="font-semibold mb-2">Klasifikasi Pelanggan</h2>
+              <div className="space-y-2 text-sm">
+                {data.summary.typeSegments.length ? (
+                  data.summary.typeSegments.map((t) => (
+                    <div key={t.type} className="flex items-center justify-between">
+                      <span>{t.type}</span>
+                      <span className="font-medium">{t.total}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-sm text-gray-500">Belum ada klasifikasi pelanggan.</div>
+                )}
+              </div>
+            </div>
+
             <div className="grid gap-6 lg:grid-cols-3">
               <div className="bg-white border rounded p-4">
                 <h2 className="font-semibold mb-2">Top Revenue</h2>
@@ -170,6 +188,20 @@ export default function SegmentationPage() {
                   <div key={r.title} className="border rounded p-3 text-sm">
                     <div className="font-medium">{r.title}</div>
                     <div className="text-gray-600 mt-1">{r.detail}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white border rounded p-4">
+              <h2 className="font-semibold mb-3">Segmen Potensial Baru</h2>
+              <div className="grid gap-3 md:grid-cols-3">
+                {data.expansionSegments.map((seg) => (
+                  <div key={seg.name} className="border rounded p-3 text-sm">
+                    <div className="font-medium">{seg.name}</div>
+                    <div className="text-xs text-gray-500">Perkiraan: {seg.size} pelanggan</div>
+                    <div className="text-gray-600 mt-1">{seg.reason}</div>
+                    <div className="text-gray-500 mt-2">{seg.suggestion}</div>
                   </div>
                 ))}
               </div>

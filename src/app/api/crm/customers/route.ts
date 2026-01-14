@@ -39,6 +39,7 @@ export async function GET(req: Request) {
       email: c.email,
       phone: c.phone,
       preferredService: c.preferredService,
+      customerType: c.customerType,
       vehicles: c.vehicles,
       serviceCount: c.serviceOrders.length,
       createdAt: c.createdAt,
@@ -58,7 +59,7 @@ export async function POST(req: Request) {
     await requirePermission(payload, "crm_manage");
 
     const body = await req.json();
-    const { name, email, phone, address, preferredService, notes, vehicle } = body || {};
+    const { name, email, phone, address, preferredService, notes, vehicle, customerType } = body || {};
 
     if (!name) {
       return new Response(JSON.stringify({ error: "Nama pelanggan wajib diisi" }), { status: 400 });
@@ -71,6 +72,7 @@ export async function POST(req: Request) {
         phone: phone || null,
         address: address || null,
         preferredService: preferredService || null,
+        customerType: customerType || null,
         notes: notes || null,
         vehicles: vehicle
           ? {

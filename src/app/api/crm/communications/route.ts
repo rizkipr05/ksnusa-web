@@ -12,10 +12,12 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status");
     const type = searchParams.get("type");
+    const source = searchParams.get("source");
 
     const where: any = {};
     if (status && status !== "ALL") where.status = status;
     if (type && type !== "ALL") where.type = type;
+    if (source && source !== "ALL") where.source = source;
 
     const logs = await prisma.communicationLog.findMany({
       where,
@@ -37,7 +39,7 @@ export async function POST(req: Request) {
     await requirePermission(payload, "crm_manage");
 
     const body = await req.json();
-    const { customerId, type, channel, message, status, sentAt } = body || {};
+    const { customerId, type, channel, message, status, sentAt, source, campaign } = body || {};
     if (!customerId || !type || !message) {
       return new Response(JSON.stringify({ error: "Customer, tipe, dan pesan wajib diisi" }), { status: 400 });
     }
@@ -50,6 +52,8 @@ export async function POST(req: Request) {
         message,
         status: status || "SENT",
         sentAt: sentAt ? new Date(sentAt) : null,
+        source: source || "MANUAL",
+        campaign: campaign || null,
       },
     });
 

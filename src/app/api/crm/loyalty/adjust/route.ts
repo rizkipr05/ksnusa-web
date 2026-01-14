@@ -8,6 +8,16 @@ function tierFor(points: number) {
   return "Silver";
 }
 
+async function ensureReward(customerId: string, type: string, title: string) {
+  const existing = await prisma.reward.findFirst({
+    where: { customerId, type, status: "PENDING" },
+  });
+  if (existing) return;
+  await prisma.reward.create({
+    data: { customerId, type, title, status: "PENDING" },
+  });
+}
+
 export async function POST(req: Request) {
   try {
     const token = getBearerTokenFromRequest(req);
@@ -54,6 +64,16 @@ export async function POST(req: Request) {
         reason: reason || "Manual adjustment",
       },
     });
+
+    if (points > 0) {
+      if (newLifetime >= 500) {
+        await ensureReward(customerId, "DISCOUNT", "Voucher Diskon 10%");
+      }
+      if (newLifetime >= 1500) {
+        await ensureReward(customerId, "DISCOUNT", "Voucher Diskon 15%");
+        await ensureReward(customerId, "PRIORITY_BOOKING", "Priority Booking");
+      }
+    }
 
     return new Response(JSON.stringify({ profile: updated }), { status: 200 });
   } catch (e: any) {

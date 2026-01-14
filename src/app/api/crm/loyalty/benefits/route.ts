@@ -9,26 +9,11 @@ export async function GET(req: Request) {
     const payload = getJwtPayload(token) as any;
     await requirePermission(payload, "crm_view");
 
-    const customers = await prisma.customer.findMany({
-      orderBy: { createdAt: "desc" },
-      include: {
-        loyaltyProfile: true,
-        rewards: {
-          where: { status: "PENDING" },
-        },
-      },
+    const benefits = await prisma.loyaltyTierBenefit.findMany({
+      orderBy: { tier: "asc" },
     });
 
-    const result = customers.map((c) => ({
-      id: c.id,
-      name: c.name,
-      email: c.email,
-      phone: c.phone,
-      profile: c.loyaltyProfile || null,
-      rewards: c.rewards || [],
-    }));
-
-    return new Response(JSON.stringify({ result }), { status: 200 });
+    return new Response(JSON.stringify({ result: benefits }), { status: 200 });
   } catch (e: any) {
     return new Response(JSON.stringify({ error: e?.message || "Loyalty error" }), { status: 500 });
   }

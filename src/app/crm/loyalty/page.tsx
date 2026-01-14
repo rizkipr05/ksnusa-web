@@ -16,6 +16,7 @@ type CustomerRow = {
   email?: string | null;
   phone?: string | null;
   profile: LoyaltyProfile | null;
+  rewards: Reward[];
 };
 
 type Transaction = {
@@ -26,10 +27,29 @@ type Transaction = {
   createdAt: string;
 };
 
+type Reward = {
+  id: string;
+  title: string;
+  type: string;
+  status: string;
+  issuedAt: string;
+  redeemedAt?: string | null;
+};
+
+type Benefit = {
+  id: string;
+  tier: string;
+  title: string;
+  description?: string | null;
+  discountPercent?: number | null;
+};
+
 export default function LoyaltyPage() {
   const [customers, setCustomers] = useState<CustomerRow[]>([]);
   const [selected, setSelected] = useState<CustomerRow | null>(null);
   const [history, setHistory] = useState<Transaction[]>([]);
+  const [benefits, setBenefits] = useState<Benefit[]>([]);
+  const [rewards, setRewards] = useState<Reward[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [adjustPoints, setAdjustPoints] = useState("");
@@ -55,6 +75,28 @@ export default function LoyaltyPage() {
     }
   };
 
+  const loadBenefits = async () => {
+    const token = localStorage.getItem("token");
+    const res = await fetch("/api/crm/loyalty/benefits", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setBenefits(data.result || []);
+    }
+  };
+
+  const loadRewards = async (customerId: string) => {
+    const token = localStorage.getItem("token");
+    const res = await fetch(`/api/crm/loyalty/rewards?customerId=${customerId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setRewards(data.result || []);
+    }
+  };
+
   const loadHistory = async (customerId: string) => {
     const token = localStorage.getItem("token");
     const res = await fetch(`/api/crm/loyalty/history/${customerId}`, {
@@ -68,12 +110,15 @@ export default function LoyaltyPage() {
 
   useEffect(() => {
     loadCustomers();
+    loadBenefits();
   }, []);
 
   const onSelect = (customer: CustomerRow) => {
     setSelected(customer);
     setHistory([]);
+    setRewards([]);
     loadHistory(customer.id);
+    loadRewards(customer.id);
   };
 
   const onAdjust = async (e: React.FormEvent) => {
@@ -97,8 +142,26 @@ export default function LoyaltyPage() {
       setReason("");
       await loadCustomers();
       await loadHistory(selected.id);
+      await loadRewards(selected.id);
     } catch (e: any) {
       setError(e.message);
+    }
+  };
+
+  const onRedeem = async (rewardId: string) => {
+    if (!selected) return;
+    const token = localStorage.getItem("token");
+    const res = await fetch("/api/crm/loyalty/rewards", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ rewardId }),
+    });
+    if (res.ok) {
+      loadRewards(selected.id);
+      loadCustomers();
     }
   };
 
@@ -133,6 +196,11 @@ export default function LoyaltyPage() {
                         <td className="p-2 border">
                           <div className="font-medium">{c.name}</div>
                           <div className="text-xs text-gray-500">{c.email || "-"}</div>
+                          {c.rewards?.length ? (
+                            <div className="text-[11px] text-orange-500 mt-1">
+                              {c.rewards.length} reward pending
+                            </div>
+                          ) : null}
                         </td>
                         <td className="p-2 border">{c.profile?.tier || "-"}</td>
                         <td className="p-2 border text-right">{c.profile?.points ?? 0}</td>
@@ -225,8 +293,50 @@ export default function LoyaltyPage() {
                     </table>
                   </div>
                 </div>
+
+                <div>
+                  <div className="text-sm font-medium mb-2">Reward</div>
+                  <div className="space-y-2">
+                    {rewards.length ? (
+                      rewards.map((r) => (
+                        <div key={r.id} className="border rounded p-2 text-xs flex items-center justify-between">
+                          <div>
+                            <div className="font-medium">{r.title}</div>
+                            <div className="text-gray-500">{r.status}</div>
+                          </div>
+                          {hasPermission("crm_manage") && r.status === "PENDING" && (
+                            <button
+                              className="px-2 py-1 text-xs border rounded"
+                              onClick={() => onRedeem(r.id)}
+                            >
+                              Redeem
+                            </button>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-xs text-gray-500">Belum ada reward.</div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
+          </div>
+        </div>
+
+        <div className="bg-white border rounded p-4">
+          <h2 className="font-semibold mb-2">Benefit Tier</h2>
+          <div className="grid gap-3 md:grid-cols-3">
+            {benefits.map((b) => (
+              <div key={b.id} className="border rounded p-3 text-sm">
+                <div className="text-xs text-gray-500">{b.tier}</div>
+                <div className="font-medium">{b.title}</div>
+                <div className="text-gray-600 mt-1">{b.description || "-"}</div>
+                {b.discountPercent ? (
+                  <div className="text-xs text-gray-500 mt-2">Diskon {b.discountPercent}%</div>
+                ) : null}
+              </div>
+            ))}
           </div>
         </div>
       </div>

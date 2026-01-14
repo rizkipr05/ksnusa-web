@@ -141,6 +141,7 @@ model Customer {
   phone           String?
   address         String?
   preferredService String?
+  customerType    String?  // "INDIVIDU" | "KOMUNITAS" | "RACING_TEAM"
   notes           String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -152,6 +153,7 @@ model Customer {
   loyaltyProfile  LoyaltyProfile?
   satisfactionSurveys SatisfactionSurvey[]
   communicationLogs CommunicationLog[]
+  rewards         Reward[]
 }
 
 model Vehicle {
@@ -235,6 +237,33 @@ model LoyaltyTransaction {
   @@index([serviceOrderId])
 }
 
+model LoyaltyTierBenefit {
+  id             String   @id @default(uuid())
+  tier           String   // "Silver" | "Gold" | "Platinum"
+  title          String
+  description    String?
+  discountPercent Int?
+  pointsCost     Int?
+  createdAt      DateTime @default(now())
+
+  @@index([tier])
+}
+
+model Reward {
+  id         String   @id @default(uuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  type       String   // "DISCOUNT" | "FREE_SERVICE" | "PRIORITY_BOOKING"
+  title      String
+  status     String   @default("PENDING") // "PENDING" | "REDEEMED" | "EXPIRED"
+  pointsCost Int?
+  issuedAt   DateTime @default(now())
+  redeemedAt DateTime?
+
+  @@index([customerId])
+  @@index([status])
+}
+
 model SatisfactionSurvey {
   id             String   @id @default(uuid())
   customerId     String
@@ -260,6 +289,8 @@ model CommunicationLog {
   message    String
   status     String   @default("SENT") // "SENT" | "FAILED" | "DRAFT"
   sentAt     DateTime?
+  source     String?  // "AUTO" | "MANUAL"
+  campaign   String?
   createdAt  DateTime @default(now())
 
   @@index([customerId])

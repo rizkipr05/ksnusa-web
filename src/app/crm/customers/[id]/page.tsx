@@ -27,6 +27,7 @@ type CustomerDetail = {
   phone?: string | null;
   address?: string | null;
   preferredService?: string | null;
+  customerType?: string | null;
   notes?: string | null;
   vehicles: Vehicle[];
   serviceOrders: ServiceOrder[];
@@ -82,6 +83,7 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
                 <div>Email: {customer.email || "-"}</div>
                 <div>HP: {customer.phone || "-"}</div>
                 <div>Alamat: {customer.address || "-"}</div>
+                <div>Tipe: {customer.customerType || "-"}</div>
               </div>
               {customer.notes && (
                 <div className="text-sm text-gray-600">Catatan: {customer.notes}</div>

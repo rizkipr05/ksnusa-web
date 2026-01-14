@@ -38,7 +38,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     await requirePermission(payload, "crm_manage");
 
     const body = await req.json();
-    const { name, email, phone, address, preferredService, notes } = body || {};
+    const { name, email, phone, address, preferredService, notes, customerType } = body || {};
 
     const customer = await prisma.customer.update({
       where: { id: params.id },
@@ -48,6 +48,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         phone: phone || null,
         address: address || null,
         preferredService: preferredService || null,
+        customerType: customerType || null,
         notes: notes || null,
       },
     });
