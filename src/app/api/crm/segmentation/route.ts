@@ -28,62 +28,36 @@ export async function GET(req: Request) {
     const payload = getJwtPayload(token) as any;
     await requirePermission(payload, "crm_view");
 
-    const serviceAgg = await prisma.serviceOrder.groupBy({
-      by: ["customerId"],
-      where: { customerId: { not: null } },
-      _count: { _all: true },
-      _sum: { totalCost: true },
-      _max: { completedDate: true, scheduledDate: true },
-    });
-
-    const customerIds = serviceAgg.map((row) => row.customerId!).filter(Boolean);
     const customers = await prisma.customer.findMany({
-      where: { id: { in: customerIds } },
-      include: { vehicles: true },
+      include: { vehicles: true, serviceOrders: true },
     });
-    const customerMap = new Map(customers.map((c) => [c.id, c]));
 
-    const segments: SegmentRow[] = serviceAgg.map((row) => ({
-      customerId: row.customerId!,
-      serviceCount: row._count._all,
-      revenue: row._sum.totalCost ? Number(row._sum.totalCost) : 0,
-      lastServiceAt: row._max.completedDate || row._max.scheduledDate || null,
-    }));
-
-    const enriched = segments
-      .map((s) => {
-        const customer = customerMap.get(s.customerId);
-        if (!customer) return null;
-        const frequency = bucketFrequency(s.serviceCount);
-        const valueTier = bucketValue(s.revenue);
-        const vehicleBrands = customer.vehicles.map((v) => v.brand).filter(Boolean) as string[];
-        return {
-          id: customer.id,
-          name: customer.name,
-          email: customer.email,
-          phone: customer.phone,
-          serviceCount: s.serviceCount,
-          revenue: s.revenue,
-          lastServiceAt: s.lastServiceAt,
-          frequency,
-          valueTier,
-          vehicleBrands,
-          preferredService: customer.preferredService,
-        };
-      })
-      .filter(Boolean) as Array<{
-      id: string;
-      name: string;
-      email?: string | null;
-      phone?: string | null;
-      serviceCount: number;
-      revenue: number;
-      lastServiceAt: Date | null;
-      frequency: string;
-      valueTier: string;
-      vehicleBrands: string[];
-      preferredService?: string | null;
-    }>;
+    const enriched = customers.map((customer) => {
+      const serviceCount = customer.serviceOrders.length;
+      const revenue = customer.serviceOrders.reduce((acc, s) => acc + (s.totalCost || 0), 0);
+      const lastServiceAt = customer.serviceOrders.reduce<Date | null>((latest, s) => {
+        const date = (s.completedDate || s.scheduledDate) as Date;
+        if (!date) return latest;
+        if (!latest || date > latest) return date;
+        return latest;
+      }, null);
+      const frequency = bucketFrequency(serviceCount);
+      const valueTier = bucketValue(revenue);
+      const vehicleBrands = customer.vehicles.map((v) => v.brand).filter(Boolean) as string[];
+      return {
+        id: customer.id,
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+        serviceCount,
+        revenue,
+        lastServiceAt,
+        frequency,
+        valueTier,
+        vehicleBrands,
+        preferredService: customer.preferredService,
+      };
+    });
 
     const byFrequency: Record<string, number> = { Loyal: 0, Repeat: 0, New: 0 };
     const byValue: Record<string, number> = { "High Value": 0, "Mid Value": 0, "Low Value": 0 };
