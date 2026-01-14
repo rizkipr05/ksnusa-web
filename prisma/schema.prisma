@@ -1,0 +1,268 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Supplier {
+  id        String    @id @default(uuid())
+  name      String
+  products  Product[]
+  facts     FactInventory[]
+}
+
+model Product {
+  id          String    @id @default(uuid())
+  sku         String    @unique
+  name        String
+  category    String
+  supplierId  String
+  supplier    Supplier  @relation(fields: [supplierId], references: [id])
+  facts       FactInventory[]
+}
+
+model FactInventory {
+  id              String   @id @default(uuid())
+  transactionDate DateTime @default(now())
+  type            String   // "IN" atau "OUT"
+  quantity        Int
+  amount          Int
+  status          String   @default("completed") // "pending", "completed", "warning"
+  notes           String?
+  
+  productId       String
+  product         Product  @relation(fields: [productId], references: [id])
+  supplierId      String
+  supplier        Supplier @relation(fields: [supplierId], references: [id])
+
+  approvalStatus  String   @default("PENDING") // "PENDING" | "APPROVED" | "REJECTED"
+  signatureId     String?
+  signature       Signature?     @relation("FactInventorySignature", fields: [signatureId], references: [id])
+  approvedById    String?
+  approvedBy      User?          @relation("UserApprovals", fields: [approvedById], references: [id])
+  approvedAt      DateTime?
+}
+
+// Model untuk Order Servis/Perbaikan Kendaraan (terpisah dari inventory)
+model ServiceOrder {
+  id              String   @id @default(uuid())
+  orderNumber     String   @unique // Nomor order servis (contoh: SO-2024-001)
+  customerName    String   // Nama pelanggan/kendaraan
+  vehicleInfo     String?  // Info kendaraan (model, plat nomor, dll)
+  serviceType     String   // Jenis servis (Ganti Oli, Servis Berkala, Perbaikan, dll)
+  description     String?  // Deskripsi lengkap pekerjaan
+  status          String   @default("PENDING") // "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED"
+  scheduledDate   DateTime @default(now())
+  completedDate   DateTime?
+  totalCost       Int?     // Biaya total
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  customerId      String?
+  customer        Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  vehicleId       String?
+  vehicle         Vehicle?  @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+
+  // Relasi ke catatan mekanik
+  mechanicNotes   MechanicNote[]
+  complaints      Complaint[]
+  loyaltyTransactions LoyaltyTransaction[]
+  satisfactionSurveys SatisfactionSurvey[]
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  password  String
+  role      String   @default("MEKANIK") // "OWNER" | "ADMIN" | "MEKANIK"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  approvals  FactInventory[] @relation("UserApprovals")
+  notes      MechanicNote[]
+  signatures Signature[]
+  rolePermissions RolePermission[]
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  name        String   @unique // e.g., "dashboard_view", "inventory_create", "bi_view"
+  resource    String   // e.g., "dashboard", "inventory", "suppliers", "orders", "bi", "approvals", "mechanic-notes"
+  action      String   // e.g., "view", "create", "edit", "delete", "approve"
+  description String?
+  createdAt   DateTime @default(now())
+  
+  rolePermissions RolePermission[]
+}
+
+model RolePermission {
+  id           String   @id @default(uuid())
+  role         String   // "OWNER" | "ADMIN" | "MEKANIK"
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  userId       String?  
+  user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  
+  @@unique([role, permissionId])
+  @@index([role])
+  @@index([userId])
+}
+
+model Signature {
+  id           String   @id @default(uuid())
+  imageData    String?
+  filePath     String?
+  signerUserId String?
+  signer       User?    @relation(fields: [signerUserId], references: [id])
+  createdAt    DateTime @default(now())
+  
+  facts        FactInventory[] @relation("FactInventorySignature")
+}
+
+model MechanicNote {
+  id              String   @id @default(uuid())
+  serviceOrderId  String
+  serviceOrder    ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  content         String
+  createdById     String
+  createdBy       User     @relation(fields: [createdById], references: [id])
+  createdAt       DateTime @default(now())
+}
+
+model Customer {
+  id              String   @id @default(uuid())
+  name            String
+  email           String?  @unique
+  phone           String?
+  address         String?
+  preferredService String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  vehicles        Vehicle[]
+  serviceOrders   ServiceOrder[]
+  complaints      Complaint[]
+  followUps       FollowUp[]
+  loyaltyProfile  LoyaltyProfile?
+  satisfactionSurveys SatisfactionSurvey[]
+  communicationLogs CommunicationLog[]
+}
+
+model Vehicle {
+  id            String   @id @default(uuid())
+  customerId    String
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  plateNumber   String?
+  brand         String?
+  model         String?
+  year          Int?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  serviceOrders ServiceOrder[]
+
+  @@index([customerId])
+}
+
+model Complaint {
+  id             String   @id @default(uuid())
+  customerId     String
+  customer       Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  serviceOrderId String?
+  serviceOrder   ServiceOrder? @relation(fields: [serviceOrderId], references: [id], onDelete: SetNull)
+  title          String
+  description    String
+  status         String   @default("OPEN") // "OPEN" | "IN_PROGRESS" | "RESOLVED"
+  channel        String?  // "Whatsapp" | "Email" | "Phone" | "Walk-in"
+  resolution     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([customerId])
+  @@index([serviceOrderId])
+  @@index([status])
+}
+
+model FollowUp {
+  id         String   @id @default(uuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  type       String   // "REMINDER" | "POST_SERVICE" | "PROMO"
+  status     String   @default("PENDING") // "PENDING" | "DONE" | "CANCELLED"
+  dueAt      DateTime
+  message    String
+  sentAt     DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([customerId])
+  @@index([status])
+  @@index([dueAt])
+}
+
+model LoyaltyProfile {
+  id             String   @id @default(uuid())
+  customerId     String   @unique
+  customer       Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  points         Int      @default(0)
+  lifetimePoints Int      @default(0)
+  tier           String   @default("Silver") // "Silver" | "Gold" | "Platinum"
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  transactions   LoyaltyTransaction[]
+}
+
+model LoyaltyTransaction {
+  id             String   @id @default(uuid())
+  profileId      String
+  profile        LoyaltyProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  points         Int
+  type           String   // "EARN" | "REDEEM" | "ADJUST"
+  reason         String?
+  serviceOrderId String?
+  serviceOrder   ServiceOrder? @relation(fields: [serviceOrderId], references: [id], onDelete: SetNull)
+  createdAt      DateTime @default(now())
+
+  @@index([profileId])
+  @@index([serviceOrderId])
+}
+
+model SatisfactionSurvey {
+  id             String   @id @default(uuid())
+  customerId     String
+  customer       Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  serviceOrderId String?
+  serviceOrder   ServiceOrder? @relation(fields: [serviceOrderId], references: [id], onDelete: SetNull)
+  rating         Int      // 1-5
+  feedback       String?
+  channel        String?  // "WhatsApp" | "Email" | "Phone" | "Walk-in"
+  createdAt      DateTime @default(now())
+
+  @@index([customerId])
+  @@index([serviceOrderId])
+  @@index([rating])
+}
+
+model CommunicationLog {
+  id         String   @id @default(uuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  type       String   // "CALL" | "WHATSAPP" | "EMAIL" | "PROMO"
+  channel    String?  // "WhatsApp" | "Email" | "Phone"
+  message    String
+  status     String   @default("SENT") // "SENT" | "FAILED" | "DRAFT"
+  sentAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([customerId])
+  @@index([status])
+  @@index([sentAt])
+}
