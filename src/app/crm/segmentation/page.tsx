@@ -1,5 +1,15 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import PermissionGuard from "@/components/PermissionGuard";
 
 type Segment = {
@@ -42,12 +52,32 @@ type SegmentationData = {
   };
   recommendations: Array<{ title: string; detail: string; level: string }>;
   expansionSegments: Array<{ name: string; size: number; reason: string; suggestion: string }>;
+  forecast: {
+    monthsAhead: number;
+    typeKeys: string[];
+    typeHistory: Array<Record<string, number | string>>;
+    typeForecast: Array<Record<string, number | string>>;
+    brandKeys: string[];
+    brandForecast: Array<Record<string, number | string>>;
+  };
 };
+
+const palette = ["#0f766e", "#3b82f6", "#f97316", "#8b5cf6", "#14b8a6", "#f43f5e"];
 
 export default function SegmentationPage() {
   const [data, setData] = useState<SegmentationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const typeLabels = useMemo(
+    () => ({
+      INDIVIDU: "Individu",
+      KOMUNITAS: "Komunitas",
+      RACING_TEAM: "Racing Team",
+      UNKNOWN: "Lainnya",
+    }),
+    []
+  );
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -178,6 +208,78 @@ export default function SegmentationPage() {
                     </li>
                   ))}
                 </ul>
+              </div>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="bg-white border rounded p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <h2 className="font-semibold">Prediksi Segmentasi Pelanggan</h2>
+                    <p className="text-xs text-gray-500">
+                      Proyeksi {data.forecast.monthsAhead} bulan ke depan (moving average).
+                    </p>
+                  </div>
+                </div>
+                {data.forecast.typeForecast.length ? (
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={data.forecast.typeForecast}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        {data.forecast.typeKeys.map((key, idx) => (
+                          <Line
+                            key={key}
+                            type="monotone"
+                            dataKey={key}
+                            name={typeLabels[key as keyof typeof typeLabels] || key}
+                            stroke={palette[idx % palette.length]}
+                            strokeWidth={2}
+                          />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500">Belum cukup data untuk prediksi.</div>
+                )}
+              </div>
+
+              <div className="bg-white border rounded p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <h2 className="font-semibold">Prediksi Segmen Kendaraan</h2>
+                    <p className="text-xs text-gray-500">Top brand berdasarkan tren historis.</p>
+                  </div>
+                </div>
+                {data.forecast.brandKeys.length && data.forecast.brandForecast.length ? (
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={data.forecast.brandForecast}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        {data.forecast.brandKeys.map((brand, idx) => (
+                          <Line
+                            key={brand}
+                            type="monotone"
+                            dataKey={brand}
+                            name={brand}
+                            stroke={palette[(idx + 2) % palette.length]}
+                            strokeWidth={2}
+                          />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500">Belum ada data brand untuk prediksi.</div>
+                )}
               </div>
             </div>
 
