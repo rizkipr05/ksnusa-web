@@ -16,6 +16,24 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Database setup (MySQL)
+
+This project uses MySQL via Prisma. Make sure a MySQL server is running and matches `DATABASE_URL` in `.env`.
+
+If you want a local MySQL via Docker:
+
+```bash
+docker compose up -d
+```
+
+Then initialize Prisma:
+
+```bash
+npx prisma generate
+npx prisma db push
+npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed.ts
+```
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
@@ -34,6 +52,66 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+# Instalasi Lengkap (Local)
+
+Prasyarat:
+
+- Node.js 18+ (disarankan 20+)
+- MySQL 8+ (atau gunakan Docker)
+- npm (atau pnpm/yarn/bun)
+
+1) Install dependencies:
+
+```bash
+npm install
+```
+
+2) Siapkan environment variables (buat atau edit `.env`):
+
+```bash
+JWT_SECRET=your_strong_secret_here
+DATABASE_URL="mysql://ksnusa_user:kiki05@localhost:3306/ksnusa"
+```
+
+3) Jalankan database MySQL (opsional via Docker):
+
+```bash
+docker compose up -d
+```
+
+4) Generate Prisma client, migrate schema, dan seed data:
+
+```bash
+npx prisma generate
+npx prisma db push
+npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed.ts
+```
+
+5) Jalankan aplikasi:
+
+```bash
+npm run dev
+```
+
+Default: `http://localhost:3000`
+
+# Tech Stack
+
+- App framework: Next.js 15 (App Router)
+- Language: TypeScript + React 19
+- Styling: Tailwind CSS + Radix UI primitives
+- Charts: Recharts
+- ORM: Prisma
+- Auth: JWT (jsonwebtoken) + bcryptjs
+- Tooling: ESLint, PostCSS
+
+# Database
+
+- Engine: MySQL 8
+- ORM/Schema: Prisma (`prisma/schema.prisma`)
+- Seed data: `prisma/seed.ts`
+- Local Docker config: `docker-compose.yml` (MySQL + volume persist)
 
 # Permission-based Access — Versi Singkat
 
