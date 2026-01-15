@@ -141,6 +141,28 @@ Default: `http://localhost:3000`
 - ORM/Schema: Prisma (`prisma/schema.prisma`)
 - Seed data: `prisma/seed.ts`
 
+# Export & Import Database (MySQL)
+
+Export (dump seluruh database):
+
+```bash
+mysqldump -u USER -p --databases NAMA_DB > backup.sql
+```
+
+Contoh sesuai `.env`:
+
+```bash
+mysqldump -u ksnusa_user -p --databases ksnusa > backup.sql
+```
+
+Import di komputer lain:
+
+```bash
+mysql -u ksnusa_user -p ksnusa < backup.sql
+```
+
+Catatan: file `backup.sql` akan tersimpan di folder tempat kamu menjalankan perintah.
+
 # Permission-based Access — Versi Singkat
 
 Tujuan:
