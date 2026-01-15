@@ -78,6 +78,13 @@ export default function Sidebar() {
 
   const crmRoutes = [
     {
+      label: "Pelanggan",
+      icon: Users,
+      href: "/crm/customers",
+      active: pathname === "/crm/customers",
+      permission: "crm_view"
+    },
+    {
       label: "Komplain",
       icon: MessageSquare,
       href: "/crm/complaints",
@@ -171,6 +178,13 @@ export default function Sidebar() {
       href: "/approvals",
       active: pathname === "/approvals",
       permission: "approvals_view"
+    },
+    {
+      label: "BI",
+      icon: PieChart,
+      href: "/bi",
+      active: pathname === "/bi",
+      permission: "bi_view"
     },
     {
       label: "Mechanic Notes",
@@ -285,31 +299,18 @@ export default function Sidebar() {
           )}
         </div>
       </div>
-      
-      {/* Tombol Settings & Logout di Bawah */}
+
       <div className="px-3 py-2 space-y-1">
-         {hasPermission("settings_view") && (
-           <Link
-              href="/settings"
-              className="text-sm group flex p-3 w-full justify-start font-medium cursor-pointer hover:text-white hover:bg-white/10 rounded-lg transition text-zinc-400"
-            >
-              <div className="flex items-center flex-1">
-                <Settings className="h-5 w-5 mr-3 text-zinc-400" />
-                Settings
-              </div>
-            </Link>
-         )}
-          
-          {/* Tombol Logout */}
-          <button
-            onClick={handleLogout}
-            className="text-sm group flex p-3 w-full justify-start font-medium cursor-pointer hover:text-white hover:bg-red-500/20 rounded-lg transition text-zinc-400 hover:text-red-400"
-          >
-            <div className="flex items-center flex-1">
-              <LogOut className="h-5 w-5 mr-3" />
-              Logout
-            </div>
-          </button>
+        {/* Tombol Logout */}
+        <button
+          onClick={handleLogout}
+          className="text-sm group flex p-3 w-full justify-start font-medium cursor-pointer hover:text-white hover:bg-red-500/20 rounded-lg transition text-zinc-400 hover:text-red-400"
+        >
+          <div className="flex items-center flex-1">
+            <LogOut className="h-5 w-5 mr-3" />
+            Logout
+          </div>
+        </button>
       </div>
     </div>
   );

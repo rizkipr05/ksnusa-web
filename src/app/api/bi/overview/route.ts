@@ -254,6 +254,8 @@ export async function GET(req: Request) {
     const totalRevenue = revenueSeries.reduce((acc, s) => acc + s.value, 0);
     const peakSeason = seasonality.reduce((prev, curr) => (curr.index > prev.index ? curr : prev), seasonality[0]);
 
+    const serviceForecast = serviceForecastResult.forecast;
+
     const insights = [
       {
         title: "Kategori sparepart dominan",

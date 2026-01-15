@@ -64,6 +64,27 @@ type ExpansionProjection = {
   items: Array<{ month: string; services: number; revenue: number }>;
 };
 
+type SegmentationSummary = {
+  totalCustomers: number;
+  byFrequency: Record<string, number>;
+  byValue: Record<string, number>;
+  topBrands: Array<{ brand: string; total: number }>;
+  typeSegments: Array<{ type: string; total: number }>;
+};
+
+type SegmentationForecast = {
+  monthsAhead: number;
+  typeKeys: string[];
+  typeForecast: Array<Record<string, number | string>>;
+  brandKeys: string[];
+  brandForecast: Array<Record<string, number | string>>;
+};
+
+type SegmentationData = {
+  summary: SegmentationSummary;
+  forecast: SegmentationForecast;
+};
+
 const palette = ["#0f766e", "#3b82f6", "#f97316", "#8b5cf6", "#14b8a6", "#f43f5e"];
 
 export default function BIPage() {
@@ -74,6 +95,8 @@ export default function BIPage() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [expansion, setExpansion] = useState<ExpansionProjection[]>([]);
   const [expansionMonths, setExpansionMonths] = useState(3);
+  const [segmentation, setSegmentation] = useState<SegmentationData | null>(null);
+  const [segmentationLoading, setSegmentationLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -84,6 +107,17 @@ export default function BIPage() {
       .then((d) => setOverview(d?.error ? null : d))
       .catch(() => setOverview(null))
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    fetch("/api/bi/segmentation", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((d) => setSegmentation(d?.error ? null : d))
+      .catch(() => setSegmentation(null))
+      .finally(() => setSegmentationLoading(false));
   }, []);
 
   useEffect(() => {
@@ -134,6 +168,16 @@ export default function BIPage() {
     });
     return Array.from(map.values()).sort((a, b) => a.month.localeCompare(b.month));
   }, [overview]);
+
+  const typeLabels = useMemo(
+    () => ({
+      INDIVIDU: "Individu",
+      KOMUNITAS: "Komunitas",
+      RACING_TEAM: "Racing Team",
+      UNKNOWN: "Lainnya",
+    }),
+    []
+  );
 
   return (
     <PermissionGuard requiredPermission="bi_view">
@@ -408,10 +452,157 @@ export default function BIPage() {
                 )}
               </div>
             </div>
+
           </>
         )}
 
-        {!loading && !overview && (
+        {segmentation && (
+          <>
+            <div className="flex flex-col gap-2">
+              <h2 className="text-xl font-semibold">Analisis Segmentasi Pelanggan</h2>
+              <p className="text-sm text-gray-500">
+                Segmentasi berdasarkan kendaraan, frekuensi, nilai transaksi, dan proyeksi ke depan.
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-4">
+              <div className="bg-white rounded border p-4">
+                <div className="text-xs uppercase text-gray-500">Total Pelanggan</div>
+                <div className="text-2xl font-semibold">{segmentation.summary.totalCustomers}</div>
+              </div>
+              <div className="bg-white rounded border p-4">
+                <div className="text-xs uppercase text-gray-500">Loyal</div>
+                <div className="text-2xl font-semibold">{segmentation.summary.byFrequency.Loyal || 0}</div>
+              </div>
+              <div className="bg-white rounded border p-4">
+                <div className="text-xs uppercase text-gray-500">Repeat</div>
+                <div className="text-2xl font-semibold">{segmentation.summary.byFrequency.Repeat || 0}</div>
+              </div>
+              <div className="bg-white rounded border p-4">
+                <div className="text-xs uppercase text-gray-500">New</div>
+                <div className="text-2xl font-semibold">{segmentation.summary.byFrequency.New || 0}</div>
+              </div>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-3">
+              <div className="bg-white rounded border p-4">
+                <h3 className="font-semibold mb-2">Klasifikasi Pelanggan</h3>
+                <div className="space-y-2 text-sm">
+                  {segmentation.summary.typeSegments.length ? (
+                    segmentation.summary.typeSegments.map((t) => (
+                      <div key={t.type} className="flex items-center justify-between">
+                        <span>{typeLabels[t.type as keyof typeof typeLabels] || t.type}</span>
+                        <span className="font-medium">{t.total}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-sm text-gray-500">Belum ada klasifikasi pelanggan.</div>
+                  )}
+                </div>
+              </div>
+              <div className="bg-white rounded border p-4">
+                <h3 className="font-semibold mb-2">Top Brand Kendaraan</h3>
+                <div className="space-y-2 text-sm">
+                  {segmentation.summary.topBrands.length ? (
+                    segmentation.summary.topBrands.map((b) => (
+                      <div key={b.brand} className="flex items-center justify-between">
+                        <span>{b.brand}</span>
+                        <span className="font-medium">{b.total}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-sm text-gray-500">Belum ada data kendaraan.</div>
+                  )}
+                </div>
+              </div>
+              <div className="bg-white rounded border p-4">
+                <h3 className="font-semibold mb-2">Tier Nilai Pelanggan</h3>
+                <div className="space-y-2 text-sm">
+                  {Object.entries(segmentation.summary.byValue).map(([tier, count]) => (
+                    <div key={tier} className="flex items-center justify-between">
+                      <span>{tier}</span>
+                      <span className="font-medium">{count}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="bg-white rounded border p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <h3 className="font-semibold">Prediksi Segmentasi Pelanggan</h3>
+                    <p className="text-xs text-gray-500">
+                      Proyeksi {segmentation.forecast.monthsAhead} bulan ke depan.
+                    </p>
+                  </div>
+                </div>
+                {segmentation.forecast.typeForecast.length ? (
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={segmentation.forecast.typeForecast}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        {segmentation.forecast.typeKeys.map((key, idx) => (
+                          <Line
+                            key={key}
+                            type="monotone"
+                            dataKey={key}
+                            name={typeLabels[key as keyof typeof typeLabels] || key}
+                            stroke={palette[idx % palette.length]}
+                            strokeWidth={2}
+                          />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500">Belum cukup data untuk prediksi.</div>
+                )}
+              </div>
+
+              <div className="bg-white rounded border p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <h3 className="font-semibold">Prediksi Segmen Kendaraan</h3>
+                    <p className="text-xs text-gray-500">Top brand berdasarkan tren historis.</p>
+                  </div>
+                </div>
+                {segmentation.forecast.brandKeys.length && segmentation.forecast.brandForecast.length ? (
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={segmentation.forecast.brandForecast}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        {segmentation.forecast.brandKeys.map((brand, idx) => (
+                          <Line
+                            key={brand}
+                            type="monotone"
+                            dataKey={brand}
+                            name={brand}
+                            stroke={palette[(idx + 2) % palette.length]}
+                            strokeWidth={2}
+                          />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500">Belum ada data brand untuk prediksi.</div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {!loading && !segmentationLoading && !overview && !segmentation && (
           <div className="text-sm text-gray-500">Belum ada data BI untuk ditampilkan.</div>
         )}
       </div>
