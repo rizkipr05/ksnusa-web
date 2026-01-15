@@ -20,12 +20,6 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 This project uses MySQL via Prisma. Make sure a MySQL server is running and matches `DATABASE_URL` in `.env`.
 
-If you want a local MySQL via Docker:
-
-```bash
-docker compose up -d
-```
-
 Then initialize Prisma:
 
 ```bash
@@ -58,7 +52,7 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 Prasyarat:
 
 - Node.js 18+ (disarankan 20+)
-- MySQL 8+ (atau gunakan Docker)
+- MySQL 8+
 - npm (atau pnpm/yarn/bun)
 
 1) Install dependencies:
@@ -71,14 +65,10 @@ npm install
 
 ```bash
 JWT_SECRET=your_strong_secret_here
-DATABASE_URL="mysql://ksnusa_user:kiki05@localhost:3306/ksnusa"
+DATABASE_URL="mysql://user:password@localhost:3306/your_database"
 ```
 
-3) Jalankan database MySQL (opsional via Docker):
-
-```bash
-docker compose up -d
-```
+3) Pastikan MySQL sudah berjalan.
 
 4) Generate Prisma client, migrate schema, dan seed data:
 
@@ -89,6 +79,45 @@ npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed.ts
 ```
 
 5) Jalankan aplikasi:
+
+```bash
+npm run dev
+```
+
+Default: `http://localhost:3000`
+
+# Instalasi di Windows
+
+Prasyarat:
+
+- Install Node.js LTS (18/20)
+- Install MySQL 8 dan pastikan service MySQL berjalan
+- Gunakan PowerShell atau CMD
+
+Langkah:
+
+1) Install dependencies:
+
+```bash
+npm install
+```
+
+2) Buat file `.env` di root project:
+
+```bash
+JWT_SECRET=your_strong_secret_here
+DATABASE_URL="mysql://user:password@localhost:3306/your_database"
+```
+
+3) Pastikan database MySQL sudah berjalan, lalu jalankan Prisma:
+
+```bash
+npx prisma generate
+npx prisma db push
+npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed.ts
+```
+
+4) Start aplikasi:
 
 ```bash
 npm run dev
@@ -111,7 +140,6 @@ Default: `http://localhost:3000`
 - Engine: MySQL 8
 - ORM/Schema: Prisma (`prisma/schema.prisma`)
 - Seed data: `prisma/seed.ts`
-- Local Docker config: `docker-compose.yml` (MySQL + volume persist)
 
 # Permission-based Access — Versi Singkat
 
