@@ -141,19 +141,7 @@ Default: `http://localhost:3000`
 - ORM/Schema: Prisma (`prisma/schema.prisma`)
 - Seed data: `prisma/seed.ts`
 
-# Export & Import Database (MySQL)
-
-Export (dump seluruh database):
-
-```bash
-mysqldump -u USER -p --databases NAMA_DB > backup.sql
-```
-
-Contoh sesuai `.env`:
-
-```bash
-mysqldump -u ksnusa_user -p --databases ksnusa > backup.sql
-```
+# Import Database (MySQL)
 
 Import di komputer lain:
 
