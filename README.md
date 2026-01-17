@@ -70,7 +70,13 @@ DATABASE_URL="mysql://user:password@localhost:3306/your_database"
 
 3) Pastikan MySQL sudah berjalan.
 
-4) Generate Prisma client, migrate schema, dan seed data:
+4) Import database dari `backup.sql` (jalankan dari folder project):
+
+```bash
+mysql -u ksnusa_user -p ksnusa < backup.sql
+```
+
+5) Generate Prisma client, migrate schema, dan seed data:
 
 ```bash
 npx prisma generate
@@ -78,7 +84,7 @@ npx prisma db push
 npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed.ts
 ```
 
-5) Jalankan aplikasi:
+6) Jalankan aplikasi:
 
 ```bash
 npm run dev
@@ -109,7 +115,15 @@ JWT_SECRET=your_strong_secret_here
 DATABASE_URL="mysql://user:password@localhost:3306/your_database"
 ```
 
-3) Pastikan database MySQL sudah berjalan, lalu jalankan Prisma:
+3) Pastikan database MySQL sudah berjalan.
+
+4) Import database dari `backup.sql` (jalankan dari folder project):
+
+```bash
+mysql -u ksnusa_user -p ksnusa < backup.sql
+```
+
+5) Jalankan Prisma:
 
 ```bash
 npx prisma generate
@@ -117,7 +131,7 @@ npx prisma db push
 npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed.ts
 ```
 
-4) Start aplikasi:
+6) Start aplikasi:
 
 ```bash
 npm run dev
