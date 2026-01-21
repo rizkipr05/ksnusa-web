@@ -711,14 +711,14 @@ export default function DashboardClient({ stats, salesData, categoryDist, recent
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle>Top Brand Kendaraan</CardTitle>
+                <CardTitle>Nama Kendaraan Populer</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
-                {biSegmentation.summary.topBrands.length ? (
-                  biSegmentation.summary.topBrands.map((b: any) => (
-                    <div key={b.brand} className="flex items-center justify-between">
-                      <span>{b.brand}</span>
-                      <span className="font-medium">{b.total}</span>
+                {biSegmentation.summary.topVehicles?.length ? (
+                  biSegmentation.summary.topVehicles.map((v: any) => (
+                    <div key={v.name} className="flex items-center justify-between">
+                      <span>{v.name}</span>
+                      <span className="font-medium">{v.total}</span>
                     </div>
                   ))
                 ) : (
@@ -779,24 +779,24 @@ export default function DashboardClient({ stats, salesData, categoryDist, recent
             <Card>
               <CardHeader>
                 <CardTitle>Prediksi Segmen Kendaraan</CardTitle>
-                <CardDescription>Top brand berdasarkan tren historis.</CardDescription>
+                <CardDescription>Top kendaraan berdasarkan tren historis.</CardDescription>
               </CardHeader>
               <CardContent>
-                {biSegmentation.forecast.brandKeys.length && biSegmentation.forecast.brandForecast.length ? (
+                {biSegmentation.forecast.vehicleKeys?.length && biSegmentation.forecast.vehicleForecast?.length ? (
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={biSegmentation.forecast.brandForecast}>
+                      <LineChart data={biSegmentation.forecast.vehicleForecast}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="month" />
                         <YAxis />
                         <Tooltip />
                         <Legend />
-                        {biSegmentation.forecast.brandKeys.map((brand: string, idx: number) => (
+                        {biSegmentation.forecast.vehicleKeys.map((name: string, idx: number) => (
                           <Line
-                            key={brand}
+                            key={name}
                             type="monotone"
-                            dataKey={brand}
-                            name={brand}
+                            dataKey={name}
+                            name={name}
                             stroke={palette[(idx + 2) % palette.length]}
                             strokeWidth={2}
                           />

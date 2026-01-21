@@ -69,6 +69,7 @@ type SegmentationSummary = {
   byFrequency: Record<string, number>;
   byValue: Record<string, number>;
   topBrands: Array<{ brand: string; total: number }>;
+  topVehicles: Array<{ name: string; total: number }>;
   typeSegments: Array<{ type: string; total: number }>;
 };
 
@@ -76,8 +77,8 @@ type SegmentationForecast = {
   monthsAhead: number;
   typeKeys: string[];
   typeForecast: Array<Record<string, number | string>>;
-  brandKeys: string[];
-  brandForecast: Array<Record<string, number | string>>;
+  vehicleKeys: string[];
+  vehicleForecast: Array<Record<string, number | string>>;
 };
 
 type SegmentationData = {
@@ -501,13 +502,13 @@ export default function BIPage() {
                 </div>
               </div>
               <div className="bg-white rounded border p-4">
-                <h3 className="font-semibold mb-2">Top Brand Kendaraan</h3>
+                <h3 className="font-semibold mb-2">Nama Kendaraan Populer</h3>
                 <div className="space-y-2 text-sm">
-                  {segmentation.summary.topBrands.length ? (
-                    segmentation.summary.topBrands.map((b) => (
-                      <div key={b.brand} className="flex items-center justify-between">
-                        <span>{b.brand}</span>
-                        <span className="font-medium">{b.total}</span>
+                  {segmentation.summary.topVehicles.length ? (
+                    segmentation.summary.topVehicles.map((v) => (
+                      <div key={v.name} className="flex items-center justify-between">
+                        <span>{v.name}</span>
+                        <span className="font-medium">{v.total}</span>
                       </div>
                     ))
                   ) : (
@@ -569,24 +570,24 @@ export default function BIPage() {
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <h3 className="font-semibold">Prediksi Segmen Kendaraan</h3>
-                    <p className="text-xs text-gray-500">Top brand berdasarkan tren historis.</p>
+                    <p className="text-xs text-gray-500">Top kendaraan berdasarkan tren historis.</p>
                   </div>
                 </div>
-                {segmentation.forecast.brandKeys.length && segmentation.forecast.brandForecast.length ? (
+                {segmentation.forecast.vehicleKeys.length && segmentation.forecast.vehicleForecast.length ? (
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={segmentation.forecast.brandForecast}>
+                      <LineChart data={segmentation.forecast.vehicleForecast}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="month" />
                         <YAxis />
                         <Tooltip />
                         <Legend />
-                        {segmentation.forecast.brandKeys.map((brand, idx) => (
+                        {segmentation.forecast.vehicleKeys.map((name, idx) => (
                           <Line
-                            key={brand}
+                            key={name}
                             type="monotone"
-                            dataKey={brand}
-                            name={brand}
+                            dataKey={name}
+                            name={name}
                             stroke={palette[(idx + 2) % palette.length]}
                             strokeWidth={2}
                           />
