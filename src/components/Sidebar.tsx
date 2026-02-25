@@ -9,7 +9,6 @@ import {
   Package,
   Truck,
   ShoppingCart,
-  Settings,
   LogOut,
   CheckSquare,
   Wrench,
@@ -24,6 +23,7 @@ import {
   MessageCircle,
   Megaphone,
   User,
+  BookOpen,
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
@@ -171,6 +171,13 @@ export default function Sidebar() {
       href: "/service-orders",
       active: pathname === "/service-orders",
       permission: "orders_view"
+    },
+    {
+      label: "Service Catalog",
+      icon: BookOpen,
+      href: "/service-catalog",
+      active: pathname === "/service-catalog",
+      permission: "crm_view"
     },
     {
       label: "Approvals",

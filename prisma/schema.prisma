@@ -68,6 +68,8 @@ model ServiceOrder {
 
   // Relasi ke catatan mekanik
   mechanicNotes   MechanicNote[]
+  liveUpdates     ServiceLiveUpdate[]
+  postServiceFeedbacks PostServiceFeedback[]
   complaints      Complaint[]
   loyaltyTransactions LoyaltyTransaction[]
   satisfactionSurveys SatisfactionSurvey[]
@@ -84,6 +86,8 @@ model User {
 
   approvals  FactInventory[] @relation("UserApprovals")
   notes      MechanicNote[]
+  liveUpdates ServiceLiveUpdate[]
+  feedbackResponses PostServiceFeedback[] @relation("PostServiceFeedbackResponder")
   signatures Signature[]
   rolePermissions RolePermission[]
 }
@@ -129,9 +133,49 @@ model MechanicNote {
   serviceOrderId  String
   serviceOrder    ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
   content         String
+  partType        String?  // "ORIGINAL" | "AFTERMARKET" | "MIXED" | "UNKNOWN"
+  partsUsed       String?  // CSV nama part, contoh: "Oli Yamalube, Kampas Rem"
   createdById     String
   createdBy       User     @relation(fields: [createdById], references: [id])
   createdAt       DateTime @default(now())
+}
+
+model ServiceLiveUpdate {
+  id             String   @id @default(uuid())
+  serviceOrderId String
+  serviceOrder   ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  updateType     String   // "BEFORE" | "PROGRESS" | "AFTER"
+  mediaType      String?  // "IMAGE" | "VIDEO"
+  mediaUrl       String?
+  caption        String?
+  directNote     String?
+  createdById    String
+  createdBy      User     @relation(fields: [createdById], references: [id])
+  createdAt      DateTime @default(now())
+
+  @@index([serviceOrderId, createdAt])
+  @@index([createdById])
+}
+
+model PostServiceFeedback {
+  id             String   @id @default(uuid())
+  customerId     String
+  customer       Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  serviceOrderId String?
+  serviceOrder   ServiceOrder? @relation(fields: [serviceOrderId], references: [id], onDelete: SetNull)
+  question       String
+  answer         String?
+  status         String   @default("OPEN") // "OPEN" | "ANSWERED" | "CLOSED"
+  askedAt        DateTime @default(now())
+  answeredAt     DateTime?
+  answeredById   String?
+  answeredBy     User?    @relation("PostServiceFeedbackResponder", fields: [answeredById], references: [id], onDelete: SetNull)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([customerId, askedAt])
+  @@index([serviceOrderId])
+  @@index([status])
 }
 
 model Customer {
@@ -154,6 +198,7 @@ model Customer {
   satisfactionSurveys SatisfactionSurvey[]
   communicationLogs CommunicationLog[]
   rewards         Reward[]
+  postServiceFeedbacks PostServiceFeedback[]
 }
 
 model Vehicle {
